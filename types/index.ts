@@ -12,6 +12,13 @@ export interface Profile {
   updated_at: string;
 }
 
+export interface AdminUserData {
+  id: string;
+  email: string;
+  role: UserRole;
+  created_at: string;
+}
+
 export interface Person {
   id: string;
   full_name: string;

@@ -2,7 +2,7 @@ import config from "@/app/config";
 import DashboardMemberList from "@/components/DashboardMemberList";
 import FamilyTree from "@/components/FamilyTree";
 import Footer from "@/components/Footer";
-import LogoutButton from "@/components/LogoutButton";
+import HeaderMenu from "@/components/HeaderMenu";
 import MindmapTree from "@/components/MindmapTree";
 import RootSelector from "@/components/RootSelector";
 import ViewToggle, { ViewMode } from "@/components/ViewToggle";
@@ -10,6 +10,7 @@ import { Person } from "@/types";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 interface PageProps {
   searchParams: Promise<{ view?: string; rootId?: string }>;
@@ -25,6 +26,23 @@ export default async function FamilyTreePage({ searchParams }: PageProps) {
   // we will fetch data here and pass it down as props.
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Check role
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  const isAdmin = profile?.role === "admin";
 
   const { data: personsData } = await supabase
     .from("persons")
@@ -67,17 +85,17 @@ export default async function FamilyTreePage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col font-sans">
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-stone-200 shadow-sm transition-all duration-200">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-stone-200 shadow-sm transition-all duration-200 cursor-pointer">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="group flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-800 group-hover:text-amber-700 transition-colors">
+              <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-800 group-hover:text-amber-700 transition-colors cursor-pointer">
                 {config.siteName}
               </h1>
             </Link>
           </div>
-          <div className="flex items-center">
-            <LogoutButton />
+          <div className="flex items-center gap-4">
+            <HeaderMenu isAdmin={isAdmin} userEmail={user.email} />
           </div>
         </div>
         <ViewToggle />

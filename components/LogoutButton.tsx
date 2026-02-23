@@ -25,7 +25,7 @@ export default function LogoutButton() {
     <button
       onClick={handleLogout}
       disabled={isLoggingOut}
-      className="text-sm font-medium text-stone-600 hover:text-stone-900 px-3 py-1.5 rounded-md hover:bg-stone-100 transition-colors disabled:opacity-50 cursor-pointer"
+      className="block text-left w-full px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors cursor-pointer"
     >
       {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
     </button>

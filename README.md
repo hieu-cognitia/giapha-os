@@ -4,11 +4,6 @@
 
 Phù hợp với người Việt Nam.
 
-## Công nghệ sử dụng
-
-- **Frontend:** Next.js
-- **Backend / Cơ sở dữ liệu:** Supabase (PostgreSQL, Authentication, Storage)
-
 ## Các tính năng chính
 
 - **Hiển thị Sơ đồ Gia phả đa dạng**: Hỗ trợ xem dạng Sơ đồ cây (Tree) và Sơ đồ tư duy (Mindmap).
@@ -43,7 +38,7 @@ Phù hợp với người Việt Nam.
 
 1. Tạo một project mới trên [Supabase](https://supabase.com/).
 2. Truy cập vào mục **SQL Editor** trên Supabase.
-3. Sao chép toàn bộ mã SQL trong file `docs/schema.sql` và dán vào SQL Editor để chạy. Bước này sẽ khởi tạo bảng tính, các quan hệ (relationships) và các chính sách bảo mật (RLS).
+3. Sao chép toàn bộ mã SQL trong file `docs/schema.sql` và dán vào SQL Editor để chạy. Bước này sẽ khởi tạo bảng tính, các quan hệ (relationships), chính sách bảo mật (RLS), và các **Database Functions** dùng cho **Quản lý Người dùng** (như `admin_create_user`, `get_admin_users`, v.v.).
 4. Khởi tạo một bucket trong Supabase Storage (ví dụ tên là `avatars`) và thiết lập quyền Public để lưu trữ ảnh đại diện. (Lưu ý: Bước này đã được tự động thêm vào script schema thông qua câu lệnh SQL).
 5. **(Tùy chọn)** Để có sẵn dữ liệu mẫu phục vụ kiểm thử nhanh (10 thành viên thuộc 4 thế hệ), hãy sao chép và chạy mã SQL trong file `docs/seed.sql` vào SQL Editor.
 
@@ -73,13 +68,29 @@ bun run dev
 
 Sau khi ứng dụng khởi chạy, hãy truy cập `http://localhost:3000` trên trình duyệt.
 
-## Hướng dẫn cấp quyền Admin
+## Hướng dẫn Quản lý Người dùng & Cấp quyền Admin
 
-Mặc định khi một người dùng đăng ký tài khoản (Sign Up), họ sẽ được cấp quyền `member`. Để chỉ định một người dúng làm `admin`, bạn cần can thiệp trực tiếp vào database Supabase:
+### 1. Tài khoản Admin Đầu tiên
 
-1. Đăng ký một tài khoản trên ứng dụng web của bạn.
-2. Vào Supabase Dashboard > **Table Editor** > Bảng `profiles`.
-3. Tìm bản ghi tương ứng với user id bạn vừa tạo, sửa giá trị cột `role` từ `member` thành `admin`.
+Người dùng **khởi tạo ứng dụng và đăng ký tài khoản (Sign Up) đầu tiên** trong hệ thống sẽ tự động được cấp quyền `admin`. Những người dùng đăng ký sau đó sẽ mặc định là `member`.
+
+### 2. Quản lý Người dùng
+
+Sau khi đăng nhập bằng tài khoản `admin`:
+
+1. Tại màn hình Dashboard, nhấp vào hình Avatar / Username ở góc phải trên thanh điều hướng.
+2. Chọn **Quản lý Người dùng** từ menu thả xuống.
+3. Tại trang này, Admin có thể:
+   - **Thêm người dùng mới**: Bấm nút `+ Thêm người dùng` để tạo tài khoản bằng thẻ email/mật khẩu, đồng thời chọn phân quyền.
+   - **Thay đổi quyền**: Nâng cấp một `member` lên `admin` hoặc ngược lại.
+   - **Xóa vĩnh viễn**: Xóa một tài khoản khỏi hệ thống (lưu ý: Admin không thể tự xóa tài khoản của chính mình).
+
+### 3. Cấp quyền Admin Thủ công (Tùy chọn cho nhà phát triển)
+
+Nếu cần thiết, bạn có thể chỉ định một người dúng làm `admin` bằng cách can thiệp trực tiếp vào database Supabase:
+
+1. Vào Supabase Dashboard > **Table Editor** > Bảng `profiles`.
+2. Tìm bản ghi tương ứng với user id của người bạn muốn cấp quyền, sửa giá trị cột `role` từ `member` thành `admin`.
 
 ## Đóng góp (Contributing)
 

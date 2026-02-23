@@ -56,6 +56,15 @@ CREATE TABLE relationships (
   UNIQUE(person_a, person_b, type)
 );
 
+-- INDEXES
+
+-- Optimize relationship queries (Finding parents, children, spouses)
+CREATE INDEX IF NOT EXISTS idx_relationships_person_a ON relationships(person_a);
+CREATE INDEX IF NOT EXISTS idx_relationships_person_b ON relationships(person_b);
+
+-- Optimize person searches
+CREATE INDEX IF NOT EXISTS idx_persons_full_name ON persons(full_name);
+
 -- RLS POLICIES
 
 -- Enable RLS
@@ -118,9 +127,14 @@ CREATE POLICY "Admins can manage relationships" ON relationships
 -- Trigger to create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
+DECLARE
+  is_first_user boolean;
 BEGIN
+  -- Check if this is the first user in the system
+  SELECT NOT EXISTS (SELECT 1 FROM public.profiles LIMIT 1) INTO is_first_user;
+
   INSERT INTO public.profiles (id, role)
-  VALUES (new.id, 'member');
+  VALUES (new.id, CASE WHEN is_first_user THEN 'admin'::public.user_role_enum ELSE 'member'::public.user_role_enum END);
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -153,4 +167,158 @@ CREATE POLICY "Users can update avatars."
 CREATE POLICY "Users can delete avatars."
   ON storage.objects FOR DELETE
   USING ( bucket_id = 'avatars' AND auth.role() = 'authenticated' );
+
+-- DATABASE FUNCTIONS FOR ADMIN (USER MANAGEMENT)
+
+-- Custom type for get_admin_users
+CREATE TYPE public.admin_user_data AS (
+    id uuid,
+    email text,
+    role public.user_role_enum,
+    created_at timestamptz
+);
+
+-- 1. Get Admin Users
+CREATE OR REPLACE FUNCTION public.get_admin_users()
+RETURNS SETOF public.admin_user_data
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ) THEN
+        RAISE EXCEPTION 'Access denied. Only admins can access this function.';
+    END IF;
+
+    RETURN QUERY
+    SELECT 
+        au.id, 
+        au.email::text, 
+        p.role, 
+        au.created_at
+    FROM auth.users au
+    LEFT JOIN public.profiles p ON au.id = p.id
+    ORDER BY au.created_at DESC;
+END;
+$$;
+
+-- 2. Set User Role
+CREATE OR REPLACE FUNCTION public.set_user_role(target_user_id uuid, new_role text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ) THEN
+        RAISE EXCEPTION 'Access denied. Only admins can access this function.';
+    END IF;
+
+    UPDATE public.profiles
+    SET role = new_role::public.user_role_enum, updated_at = now()
+    WHERE id = target_user_id;
+END;
+$$;
+
+-- 3. Delete User
+CREATE OR REPLACE FUNCTION public.delete_user(target_user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ) THEN
+        RAISE EXCEPTION 'Access denied. Only admins can access this function.';
+    END IF;
+    
+    IF auth.uid() = target_user_id THEN
+        RAISE EXCEPTION 'Cannot delete your own account from the admin panel.';
+    END IF;
+
+    DELETE FROM auth.users WHERE id = target_user_id;
+END;
+$$;
+
+-- Note: Supabase uses pgcrypto for password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- 4. Admin Create User
+CREATE OR REPLACE FUNCTION public.admin_create_user(new_email text, new_password text, new_role text)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, extensions
+AS $$
+DECLARE
+    new_id uuid;
+BEGIN
+    -- Only admin can run this
+    IF NOT EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND role = 'admin'
+    ) THEN
+        RAISE EXCEPTION 'Access denied. Only admins can access this function.';
+    END IF;
+
+    -- Generate a new UUID for the user
+    new_id := gen_random_uuid();
+
+    -- Insert into auth.users using extensions.crypt and extensions.gen_salt
+    INSERT INTO auth.users (
+        id, 
+        instance_id,
+        aud, 
+        role, 
+        email, 
+        encrypted_password, 
+        email_confirmed_at, 
+        recovery_sent_at, 
+        last_sign_in_at, 
+        raw_app_meta_data, 
+        raw_user_meta_data, 
+        created_at, 
+        updated_at, 
+        confirmation_token, 
+        email_change, 
+        email_change_token_new, 
+        recovery_token
+    )
+    VALUES (
+        new_id,
+        '00000000-0000-0000-0000-000000000000',
+        'authenticated',
+        'authenticated',
+        new_email,
+        extensions.crypt(new_password, extensions.gen_salt('bf')),
+        now(),
+        NULL,
+        NULL,
+        '{"provider":"email","providers":["email"]}',
+        '{}',
+        now(),
+        now(),
+        '',
+        '',
+        '',
+        ''
+    );
+
+    -- Insert into public.profiles
+    INSERT INTO public.profiles (id, role, created_at, updated_at)
+    VALUES (new_id, new_role::public.user_role_enum, now(), now())
+    ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role;
+    
+    RETURN new_id;
+END;
+$$;
 
