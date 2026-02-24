@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Settings, UserCircle } from "lucide-react";
+import { ChevronDown, Database, Settings, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import LogoutButton from "./LogoutButton";
@@ -64,14 +64,24 @@ export default function HeaderMenu({ isAdmin, userEmail }: HeaderMenuProps) {
 
             <div className="py-1">
               {isAdmin && (
-                <Link
-                  href="/dashboard/users"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
-                >
-                  <Settings className="w-4 h-4" />
-                  Quản lý Người dùng
-                </Link>
+                <>
+                  <Link
+                    href="/dashboard/users"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Quản lý Người dùng
+                  </Link>
+                  <Link
+                    href="/dashboard/data"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
+                  >
+                    <Database className="w-4 h-4" />
+                    Sao lưu & Phục hồi
+                  </Link>
+                </>
               )}
               <LogoutButton />
             </div>
