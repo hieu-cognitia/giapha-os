@@ -30,6 +30,12 @@ Phù hợp với người Việt Nam.
 
 ![Mindmap](docs/screenshots/mindmap.png)
 
+![Mindmap](docs/screenshots/stats.png)
+
+![Mindmap](docs/screenshots/kinship.png)
+
+![Mindmap](docs/screenshots/events.png)
+
 ## Cài đặt và Chạy dự án
 
 ### Yêu cầu
