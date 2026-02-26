@@ -38,81 +38,70 @@ Phù hợp với người Việt Nam.
 
 ## Cài đặt và Chạy dự án
 
-### Yêu cầu
+Chỉ cần khoảng 10 -> 15 phút là bạn có thể tự dựng hệ thống gia phả cho gia đình mình.
 
-- [Node.js](https://nodejs.org/) (phiên bản >= 24)
-- [Bun](https://bun.sh/) (Công cụ chạy/install dependencies được khuyên dùng cho dự án này)
-- Tài khoản [Supabase](https://supabase.com/)
+---
 
-### 1. Khởi tạo Database trên Supabase
+## 1. Tạo Database (Miễn phí với Supabase)
 
-1. Tạo một project mới trên [Supabase](https://supabase.com/).
-2. Truy cập vào mục **SQL Editor** trên Supabase.
-3. Sao chép toàn bộ mã SQL trong file `docs/schema.sql` và dán vào SQL Editor để chạy.
-4. Khởi tạo một bucket trong Supabase Storage (ví dụ tên là `avatars`) và thiết lập quyền Public để lưu trữ ảnh đại diện. (Lưu ý: Bước này đã được tự động thêm vào script schema thông qua câu lệnh SQL).
-5. **(Tùy chọn)** Để có sẵn dữ liệu mẫu phục vụ kiểm thử nhanh (10 thành viên thuộc 4 thế hệ), hãy sao chép và chạy mã SQL trong file `docs/seed.sql` vào SQL Editor.
+1. Tạo tài khoản miễn phí tại https://github.com nếu chưa có.
+2. Tạo tài khoản miễn phí tại https://supabase.com nếu chưa có (khuyên dùng đăng ký bằng tài khoản GitHub cho nhanh).
+3. Tạo **New Project**. Đợi khoảng 1 -> 2 phút để hệ thống khởi tạo xong.
+4. Vào **Project Settings → API**, giữ lại 2 giá trị này để dùng ở bước tiếp theo:
+   - `Project URL`
+   - `Project API Keys`
 
-### 2. Thiết lập Biến môi trường
+---
 
-Tạo một file `.env.local` ở thư mục gốc của dự án và điền các thông tin từ Supabase:
+## Cách 1: Deploy nhanh lên Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhomielab%2Fgiapha-os&env=SITE_NAME,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY)
+
+1. Tạo tài khoản miễn phí tại https://vercel.com nếu chưa có (khuyên dùng đăng ký bằng tài khoản GitHub cho nhanh).
+2. Nhấn nút Deploy bên trên.
+3. Điền các biến môi trường đã lưu ở **bước 1**:
+   - `NEXT_PUBLIC_SUPABASE_URL` = `Project URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` = `Project API Keys`
+4. Nhấn **Deploy** và chờ 2 -> 3 phút.
+
+Bạn sẽ có một đường link website để sử dụng ngay.
+
+---
+
+## Cách 2: Chạy trên máy cá nhân
+
+Yêu cầu: máy đã cài [Node.js](https://nodejs.org/en) và [Bun](https://bun.sh/)
+
+1. Clone hoặc tải project về máy.
+2. Đổi tên file `.env.example` thành `.env.local`.
+3. Mở file `.env.local` và điền các giá trị đã lưu ở **bước 1**.
 
 ```env
-SITE_NAME="Gia Phả OS"
-NEXT_PUBLIC_SUPABASE_URL="your_supabase_project_url"
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY="your_supabase_anon_key"
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY="your-anon-key"
 ```
 
-### 3. Cài đặt các gói phụ thuộc (Dependencies)
-
-Sử dụng `bun` (hoặc `npm`/`yarn`) để cài đặt:
+4. Cài thư viện
 
 ```bash
 bun install
 ```
 
-### 4. Chạy dự án trên máy phát triển (Development)
+5. Chạy dự án
 
 ```bash
 bun run dev
 ```
 
-Sau khi ứng dụng khởi chạy, hãy truy cập `http://localhost:3000` trên trình duyệt.
+Mở trình duyệt và truy cập: `http://localhost:3000`
 
-### 5. Triển khai lên Vercel & Netlify
+---
 
-Cách nhanh nhất để dùng thử nhanh là sử dụng các nền tảng Cloud (miễn phí cho cá nhân).
+## Tài khoản đầu tiên
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fhomielab%2Fgiapha-os&env=SITE_NAME,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY)
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/homielab/giapha-os)
-
-1. Nhấn nút **Deploy** ở trên.
-2. Kết nối với tài khoản GitHub và chọn repo này.
-3. Trong phần cấu hình, hãy thêm các **Environment Variables** tương tự như hướng dẫn ở mục [Thiết lập Biến môi trường](#2-thiết-lập-biến-môi-trường). Hãy lấy các thông tin này từ project Supabase của bạn.
-
-## Hướng dẫn Quản lý Người dùng & Cấp quyền Admin
-
-### 1. Tài khoản Admin Đầu tiên
-
-Người dùng **khởi tạo ứng dụng và đăng ký tài khoản (Sign Up) đầu tiên** trong hệ thống sẽ tự động được cấp quyền `admin`. Những người dùng đăng ký sau đó sẽ mặc định là `member`.
-
-### 2. Quản lý Người dùng
-
-Sau khi đăng nhập bằng tài khoản `admin`:
-
-1. Tại màn hình Dashboard, nhấp vào hình Avatar / Username ở góc phải trên thanh điều hướng.
-2. Chọn **Quản lý Người dùng** từ menu thả xuống.
-3. Tại trang này, Admin có thể:
-   - **Thêm người dùng mới**: Bấm nút `+ Thêm người dùng` để tạo tài khoản bằng thẻ email/mật khẩu, đồng thời chọn phân quyền.
-   - **Thay đổi quyền**: Nâng cấp một `member` lên `admin` hoặc ngược lại.
-   - **Xóa vĩnh viễn**: Xóa một tài khoản khỏi hệ thống (lưu ý: Admin không thể tự xóa tài khoản của chính mình).
-
-### 3. Cấp quyền Admin Thủ công (Tùy chọn cho nhà phát triển)
-
-Nếu cần thiết, bạn có thể chỉ định một người dúng làm `admin` bằng cách can thiệp trực tiếp vào database Supabase:
-
-1. Vào Supabase Dashboard > **Table Editor** > Bảng `profiles`.
-2. Tìm bản ghi tương ứng với user id của người bạn muốn cấp quyền, sửa giá trị cột `role` từ `member` thành `admin`.
+- Đăng ký tài khoản mới khi vào web lần đầu.
+- Người đăng ký đầu tiên sẽ tự động có quyền **admin**.
+- Các tài khoản đăng ký sau sẽ mặc định là **member**.
 
 ## Đóng góp (Contributing)
 

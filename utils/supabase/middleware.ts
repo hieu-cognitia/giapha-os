@@ -5,6 +5,16 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
 export async function updateSession(request: NextRequest) {
+  // If env vars are missing, we cannot create a supabase client
+  if (!supabaseUrl || !supabaseKey) {
+    if (request.nextUrl.pathname !== "/missing-db-config") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/missing-db-config";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -43,6 +53,25 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path),
   );
 
+  const isLoginPage = request.nextUrl.pathname.startsWith("/login");
+
+  // Check if DB schema is initialized by checking if profiles table exists
+  if (isProtectedPath || isLoginPage) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .limit(1);
+
+    if (
+      profileError &&
+      (profileError.code === "PGRST205" || profileError.code === "42P01")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/setup";
+      return NextResponse.redirect(url);
+    }
+  }
+
   if (isProtectedPath && !user) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
@@ -51,7 +80,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect users who are already logged in away from the login page
-  if (request.nextUrl.pathname.startsWith("/login") && user) {
+  if (isLoginPage && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);

@@ -4,13 +4,20 @@ import config from "@/app/config";
 import Footer from "@/components/Footer";
 import { createClient } from "@/utils/supabase/client";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, KeyRound, Mail, Shield, UserPlus } from "lucide-react";
+import {
+  ArrowLeft,
+  Info,
+  KeyRound,
+  Mail,
+  Shield,
+  UserPlus,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("giaphaos@homielab.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,27 +67,54 @@ export default function LoginPage() {
           return;
         }
 
+        // 1. Try to sign up
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
 
         if (error) {
+          // Check if error is related to missing database schema/tables
+          if (
+            error.message.includes("relation") &&
+            error.message.includes("does not exist")
+          ) {
+            router.push("/setup");
+            return;
+          }
+
           setError(error.message);
         } else if (data.user?.identities && data.user.identities.length === 0) {
           setError(
             "Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.",
           );
         } else {
-          setSuccessMessage(
-            "Đăng ký thành công tài khoản bạn cần chờ admin kích hoạt để có thể xem nội dung.",
-          );
-          setIsLogin(true); // Switch back to login view or just leave success message
-          setConfirmPassword(""); // clear confirm password
-          setPassword(""); // clear password
+          if (data.session) {
+            router.push("/dashboard");
+            router.refresh();
+          } else {
+            // Attempt to sign in immediately (catches auto-confirmed first admin)
+            const { data: signInData, error: signInError } =
+              await supabase.auth.signInWithPassword({
+                email,
+                password,
+              });
+
+            if (!signInError && signInData.session) {
+              router.push("/dashboard");
+              router.refresh();
+            } else {
+              setSuccessMessage(
+                "Đăng ký thành công! Vui lòng chờ admin kích hoạt tài khoản để xem nội dung.",
+              );
+              setIsLogin(true); // Switch back to login view
+              setConfirmPassword(""); // clear confirm password
+              setPassword(""); // clear password
+            }
+          }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       setError("An unexpected error occurred");
       console.error(err);
     } finally {
@@ -311,6 +345,14 @@ export default function LoginPage() {
       >
         <ArrowLeft className="size-4 group-hover:-translate-x-1 transition-transform" />
         Trang chủ
+      </Link>
+
+      <Link
+        href="/about"
+        className="absolute top-6 right-6 z-20 flex items-center gap-2 text-stone-500 hover:text-stone-900 font-semibold text-sm transition-all duration-300 group bg-white/60 px-5 py-2.5 rounded-full backdrop-blur-md shadow-sm border border-stone-200 hover:border-stone-300 hover:shadow-md"
+      >
+        <Info className="size-4 group-hover:scale-110 transition-transform" />
+        Giới thiệu
       </Link>
 
       <Footer className="bg-transparent relative z-10 border-none mt-auto" />
