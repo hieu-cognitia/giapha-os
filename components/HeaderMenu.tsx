@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  BarChart2,
   ChevronDown,
   Database,
   Network,
@@ -97,6 +98,14 @@ export default function HeaderMenu({ isAdmin, userEmail }: HeaderMenuProps) {
                   </Link>
                 </>
               )}
+              <Link
+                href="/dashboard/stats"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-stone-700 hover:text-amber-700 hover:bg-amber-50 transition-colors"
+              >
+                <BarChart2 className="size-4" />
+                Thống kê gia phả
+              </Link>
               <LogoutButton />
             </div>
           </motion.div>

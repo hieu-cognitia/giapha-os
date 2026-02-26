@@ -38,6 +38,9 @@ export default function DashboardMemberList({
       case "deceased":
         matchesFilter = person.is_deceased;
         break;
+      case "first_child":
+        matchesFilter = person.birth_order === 1;
+        break;
       case "all":
       default:
         matchesFilter = true;
@@ -91,6 +94,7 @@ export default function DashboardMemberList({
                   <option value="in_law_female">Dâu</option>
                   <option value="in_law_male">Rể</option>
                   <option value="deceased">Đã mất</option>
+                  <option value="first_child">Con trưởng</option>
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                   <svg
