@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pb:setup": "node scripts/setup-pocketbase.mjs",
+    "pb:seed": "node scripts/setup-pocketbase.mjs --seed-only"
   },
   "dependencies": {
     "framer-motion": "^12.34.3",

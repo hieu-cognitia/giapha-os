@@ -1,5 +1,5 @@
 import Footer from "@/components/Footer";
-import { ArrowLeft, Database, Play } from "lucide-react";
+import { ArrowLeft, Database, Play, Terminal } from "lucide-react";
 import Link from "next/link";
 
 export default async function SetupPage() {
@@ -29,13 +29,13 @@ export default async function SetupPage() {
           </div>
 
           <div className="space-y-6">
+            {/* Step 1: start PocketBase */}
             <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6">
               <h3 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
                 <Play className="size-5 text-stone-500" />
-                Hướng dẫn thiết lập PocketBase:
+                Bước 1 — Khởi động PocketBase
               </h3>
-
-              <ol className="list-decimal list-inside space-y-5 text-stone-600">
+              <ol className="list-decimal list-inside space-y-4 text-stone-600">
                 <li className="leading-relaxed">
                   Tải PocketBase (file đơn lẻ, không cần cài đặt) từ{" "}
                   <a
@@ -62,14 +62,7 @@ export default async function SetupPage() {
                   để tạo tài khoản superadmin lần đầu.
                 </li>
                 <li className="leading-relaxed">
-                  Tạo các Collection cần thiết theo hướng dẫn trong file{" "}
-                  <code className="bg-stone-100 px-2 py-0.5 rounded text-sm">
-                    docs/pocketbase-schema.md
-                  </code>
-                  .
-                </li>
-                <li className="leading-relaxed">
-                  Thêm biến môi trường vào{" "}
+                  Thêm thông tin vào{" "}
                   <code className="bg-stone-100 px-2 py-0.5 rounded text-sm">
                     .env.local
                   </code>
@@ -80,14 +73,46 @@ POCKETBASE_SUPERADMIN_EMAIL=your_admin_email
 POCKETBASE_SUPERADMIN_PASSWORD=your_admin_password`}</pre>
                   </div>
                 </li>
-                <li className="leading-relaxed">
-                  Quay lại đây và bấm{" "}
-                  <Link href="/login" className="text-amber-600 font-semibold hover:underline">
-                    Đăng nhập
-                  </Link>
-                  .
-                </li>
               </ol>
+            </div>
+
+            {/* Step 2: run setup command */}
+            <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
+              <h3 className="font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                <Terminal className="size-5 text-indigo-500" />
+                Bước 2 — Tạo schema tự động (1 lệnh)
+              </h3>
+              <p className="text-stone-600 mb-3 leading-relaxed">
+                Chạy lệnh sau để tự động tạo toàn bộ collections trong
+                PocketBase — không cần thao tác thủ công trong Admin UI:
+              </p>
+              <div className="bg-stone-900 text-green-400 p-4 rounded-xl overflow-x-auto text-sm font-mono mb-3">
+                <pre>npm run pb:setup</pre>
+              </div>
+              <p className="text-stone-500 text-sm leading-relaxed">
+                Muốn nạp sẵn dữ liệu mẫu (27 thành viên, 4 đời) để thử nghiệm?
+              </p>
+              <div className="bg-stone-900 text-green-400 p-4 rounded-xl overflow-x-auto text-sm font-mono mt-2">
+                <pre>npm run pb:seed</pre>
+              </div>
+            </div>
+
+            {/* Step 3: start app */}
+            <div className="bg-stone-50 border border-stone-200 rounded-2xl p-6">
+              <h3 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
+                <Play className="size-5 text-stone-500" />
+                Bước 3 — Chạy ứng dụng
+              </h3>
+              <div className="bg-stone-900 text-stone-100 p-4 rounded-xl overflow-x-auto text-sm font-mono mb-3">
+                <pre>npm run dev</pre>
+              </div>
+              <p className="text-stone-500 text-sm">
+                Sau đó quay lại đây và{" "}
+                <Link href="/login" className="text-amber-600 font-semibold hover:underline">
+                  đăng nhập
+                </Link>
+                . Tài khoản đầu tiên đăng ký sẽ tự động có quyền admin.
+              </p>
             </div>
           </div>
         </div>
@@ -105,3 +130,4 @@ POCKETBASE_SUPERADMIN_PASSWORD=your_admin_password`}</pre>
     </div>
   );
 }
+

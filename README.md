@@ -55,7 +55,17 @@ Dự án sử dụng **[PocketBase](https://pocketbase.io)** — một file th�
 
 3. Mở trình duyệt tại `http://127.0.0.1:8090/_/` để tạo tài khoản **superadmin** lần đầu.
 
-4. Tạo các Collection theo hướng dẫn trong file [`docs/pocketbase-schema.md`](docs/pocketbase-schema.md).
+4. Tạo schema tự động bằng lệnh (không cần thao tác trong Admin UI):
+
+```bash
+npm run pb:setup
+```
+
+Muốn nạp sẵn dữ liệu mẫu (27 thành viên — 4 đời, Dòng họ Vạn hư cấu) để thử nghiệm:
+
+```bash
+npm run pb:seed
+```
 
 ---
 
