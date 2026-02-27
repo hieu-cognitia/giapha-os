@@ -6,6 +6,8 @@ Dự án ra đời từ nhu cầu thực tế: cần một hệ thống Cloud đ
 
 Phù hợp với người Việt Nam.
 
+> **⚠️ LƯU Ý:** Đây là một fork được cải thiện từ dự án gốc, thay thế Supabase bằng **PocketBase** để đơn giản hóa triển khai cục bộ, tránh phụ thuộc vào dịch vụ bên thứ ba. Vibe-coded, **không có đảm bảo an ninh hoặc hỗ trợ cập nhật** trong tương lai.
+
 ## Các tính năng chính
 
 - **Sơ đồ trực quan**: Xem gia phả dạng Cây (Tree) và Sơ đồ tư duy (Mindmap).
@@ -44,6 +46,37 @@ Dự án sử dụng **[PocketBase](https://pocketbase.io)** — một file th�
 
 ---
 
+## Chạy với Docker (Nhanh nhất)
+
+Yêu cầu: [Docker Desktop](https://www.docker.com/products/docker-desktop)
+
+1. Clone hoặc tải project về máy.
+2. Chạy:
+
+```bash
+docker compose up --build
+```
+
+3. Chờ 1-2 phút để containers khởi động.
+4. Pocketbase container sẽ in ra một đường dẫn để đăng kí tài khoản **superadmin** lần đầu.
+5. Đổi tên file `.env.example` thành `.env.local`.
+6. Mở file `.env.local` và điền các giá trị:
+
+```env
+NEXT_PUBLIC_POCKETBASE_URL="http://127.0.0.1:8090"
+POCKETBASE_SUPERADMIN_EMAIL="admin@example.com"
+POCKETBASE_SUPERADMIN_PASSWORD="your-superadmin-password"
+```
+7. Tạo schema và nạp dữ liệu mẫu:
+
+```bash
+npm run pb:setup -- --seed
+```
+
+Xong! Tạo tài khoản và đăng nhập tại tại `http://localhost:3000` để thử.
+
+---
+
 ## 1. Cài đặt và cấu hình PocketBase
 
 1. Tải PocketBase từ https://pocketbase.io/docs/ (chọn phiên bản phù hợp với hệ điều hành).
@@ -53,7 +86,7 @@ Dự án sử dụng **[PocketBase](https://pocketbase.io)** — một file th�
 ./pocketbase serve
 ```
 
-3. Mở trình duyệt tại `http://127.0.0.1:8090/_/` để tạo tài khoản **superadmin** lần đầu.
+3. Pocketbase sẽ tự mở 1 URL để tạo tài khoản **superadmin** lần đầu.
 
 4. Tạo schema tự động bằng lệnh (không cần thao tác trong Admin UI):
 
@@ -62,6 +95,12 @@ npm run pb:setup
 ```
 
 Muốn nạp sẵn dữ liệu mẫu (27 thành viên — 4 đời, Dòng họ Vạn hư cấu) để thử nghiệm:
+
+```bash
+npm run pb:setup -- --seed
+```
+
+Hoặc nếu collections đã tồn tại, chỉ nạp dữ liệu:
 
 ```bash
 npm run pb:seed
