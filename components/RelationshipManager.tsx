@@ -86,12 +86,14 @@ export default function RelationshipManager({
       const relsA = await pb.collection("relationships").getFullList({
         filter: pb.filter("person_a = {:id}", { id: personId }),
         expand: "person_b",
+        requestKey: null,
       });
 
       // Get all relationships where this person is person_b (expand person_a)
       const relsB = await pb.collection("relationships").getFullList({
         filter: pb.filter("person_b = {:id}", { id: personId }),
         expand: "person_a",
+        requestKey: null,
       });
 
       const formattedRels: EnrichedRelationship[] = [];
@@ -151,6 +153,7 @@ export default function RelationshipManager({
         const childrenMarriages = await pb.collection("relationships").getFullList({
           filter: inLawFilter,
           expand: "person_a,person_b",
+          requestKey: null,
         });
 
         childrenMarriages.forEach((m) => {

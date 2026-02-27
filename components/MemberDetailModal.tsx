@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ArrowLeft, Edit2, ExternalLink, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDashboard } from "./DashboardContext";
 
 export default function MemberDetailModal() {
@@ -21,7 +21,8 @@ export default function MemberDetailModal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [authChecked, setAuthChecked] = useState(false);
+  const authCheckedRef = useRef(false);
+  const isAdminRef = useRef(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [person, setPerson] = useState<Person | null>(null);
@@ -40,14 +41,14 @@ export default function MemberDetailModal() {
       setLoading(true);
       setError(null);
       try {
-        // 1. Check auth / role
-        let currentIsAdmin = isAdmin;
-        if (!authChecked) {
+        // 1. Check auth / role (use refs so this doesn't recreate fetchData)
+        if (!authCheckedRef.current) {
           if (pb.authStore.isValid) {
-            currentIsAdmin = pb.authStore.model?.role === "admin";
-            setIsAdmin(currentIsAdmin);
+            const admin = pb.authStore.model?.role === "admin";
+            isAdminRef.current = admin;
+            setIsAdmin(admin);
           }
-          setAuthChecked(true);
+          authCheckedRef.current = true;
         }
 
         // 2. Fetch Person Public Data
@@ -64,7 +65,7 @@ export default function MemberDetailModal() {
         setPerson(personData);
 
         // 3. Fetch Private Data if Admin
-        if (currentIsAdmin) {
+        if (isAdminRef.current) {
           try {
             const privData = await pb
               .collection("person_details_private")
@@ -82,7 +83,7 @@ export default function MemberDetailModal() {
         setLoading(false);
       }
     },
-    [isAdmin, authChecked, pb],
+    [pb],
   );
 
   // Sync state with URL parameter
