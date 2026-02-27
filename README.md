@@ -73,7 +73,7 @@ POCKETBASE_SUPERADMIN_PASSWORD="your-superadmin-password"
 npm run pb:setup -- --seed
 ```
 
-Xong! Tạo tài khoản và đăng nhập tại tại `http://localhost:3000` để thử.
+Xong! Tạo tài khoản và đăng nhập tại tại `http://localhost:3030` để thử.
 
 ---
 
@@ -146,7 +146,7 @@ bun install
 bun run dev
 ```
 
-Mở trình duyệt và truy cập: `http://localhost:3000`
+Mở trình duyệt và truy cập: `http://localhost:3030`
 
 ---
 

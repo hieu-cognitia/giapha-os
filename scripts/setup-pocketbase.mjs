@@ -392,7 +392,7 @@ async function main() {
   }
   console.log("Next steps:");
   console.log("    1. Start the app:  npm run dev  (or: bun run dev)");
-  console.log("    2. Open: http://localhost:3000");
+  console.log("    2. Open: http://localhost:3030");
   console.log("    3. Register — the first account automatically becomes admin.\n");
 }
 
