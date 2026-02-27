@@ -1,39 +1,29 @@
 import LineageManager from "@/components/LineageManager";
-import { createClient } from "@/utils/supabase/server";
+import { Person, Relationship } from "@/types";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function LineagePage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (pb.authStore.model?.role !== "admin") {
     redirect("/dashboard");
   }
 
-  const { data: personsData } = await supabase
-    .from("persons")
-    .select("*")
-    .order("birth_year", { ascending: true, nullsFirst: false });
+  const personsRaw = await pb.collection("persons").getFullList({
+    sort: "birth_year",
+  });
 
-  const { data: relsData } = await supabase.from("relationships").select("*");
+  const relationshipsRaw = await pb.collection("relationships").getFullList();
 
-  const persons = personsData || [];
-  const relationships = relsData || [];
+  const persons = personsRaw as unknown as Person[];
+  const relationships = relationshipsRaw as unknown as Relationship[];
 
   return (
     <main className="flex-1 overflow-auto bg-stone-50/50 flex flex-col pt-8 relative w-full">

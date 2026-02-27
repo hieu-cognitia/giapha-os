@@ -1,28 +1,17 @@
 import MemberForm from "@/components/MemberForm";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function NewMemberPage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
-  // Check if user is admin
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = pb.authStore.model?.role === "admin";
 
   return (
     <div className="flex-1 w-full relative flex flex-col pb-8">

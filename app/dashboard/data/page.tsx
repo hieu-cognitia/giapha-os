@@ -1,28 +1,17 @@
 import DataImportExport from "@/components/DataImportExport";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function DataManagementPage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
-  // Check role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (pb.authStore.model?.role !== "admin") {
     redirect("/dashboard");
   }
 

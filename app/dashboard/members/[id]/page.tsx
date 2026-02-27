@@ -1,6 +1,7 @@
 import DeleteMemberButton from "@/components/DeleteMemberButton";
 import MemberDetailContent from "@/components/MemberDetailContent";
-import { createClient } from "@/utils/supabase/server";
+import { Person } from "@/types";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -11,46 +12,36 @@ interface PageProps {
 
 export default async function MemberDetailPage({ params }: PageProps) {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
   const { id } = await params;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
-  // Check role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = pb.authStore.model?.role === "admin";
 
   // Fetch Person Public Data
-  const { data: person, error } = await supabase
-    .from("persons")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error || !person) {
+  let person: Person | null = null;
+  try {
+    const raw = await pb.collection("persons").getOne(id);
+    person = raw as unknown as Person;
+  } catch {
     notFound();
   }
+
+  if (!person) notFound();
 
   // Fetch Private Data if Admin
   let privateData = null;
   if (isAdmin) {
-    const { data } = await supabase
-      .from("person_details_private")
-      .select("*")
-      .eq("person_id", id)
-      .single();
-    privateData = data;
+    try {
+      privateData = await pb
+        .collection("person_details_private")
+        .getFirstListItem(pb.filter("person_id = {:id}", { id }));
+    } catch {
+      // No private data yet — that's fine
+    }
   }
 
   return (

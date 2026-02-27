@@ -1,19 +1,19 @@
 "use client";
 
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/pocketbase/client";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LogoutButton() {
   const router = useRouter();
-  const supabase = createClient();
+  const pb = createClient();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await supabase.auth.signOut();
+      pb.authStore.clear();
       router.push("/login");
       router.refresh(); // Refresh to clear any cached Server Component data
     } catch (error) {

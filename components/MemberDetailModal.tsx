@@ -3,7 +3,7 @@
 import MemberDetailContent from "@/components/MemberDetailContent";
 import MemberForm from "@/components/MemberForm";
 import { Person } from "@/types";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/pocketbase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, ArrowLeft, Edit2, ExternalLink, X } from "lucide-react";
 import Link from "next/link";
@@ -14,7 +14,7 @@ import { useDashboard } from "./DashboardContext";
 export default function MemberDetailModal() {
   const { memberModalId: memberId, setMemberModalId } = useDashboard();
   const router = useRouter();
-  const supabase = createClient();
+  const pb = createClient();
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -43,41 +43,36 @@ export default function MemberDetailModal() {
         // 1. Check auth / role
         let currentIsAdmin = isAdmin;
         if (!authChecked) {
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-          if (user) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", user.id)
-              .single();
-            currentIsAdmin = profile?.role === "admin";
+          if (pb.authStore.isValid) {
+            currentIsAdmin = pb.authStore.model?.role === "admin";
             setIsAdmin(currentIsAdmin);
           }
           setAuthChecked(true);
         }
 
         // 2. Fetch Person Public Data
-        const { data: personData, error: personError } = await supabase
-          .from("persons")
-          .select("*")
-          .eq("id", id)
-          .single();
+        let personData: Person | null = null;
+        try {
+          personData = (await pb.collection("persons").getOne(id)) as unknown as Person;
+        } catch {
+          throw new Error("Không thể tải thông tin thành viên.");
+        }
 
-        if (personError || !personData) {
+        if (!personData) {
           throw new Error("Không thể tải thông tin thành viên.");
         }
         setPerson(personData);
 
         // 3. Fetch Private Data if Admin
         if (currentIsAdmin) {
-          const { data: privData } = await supabase
-            .from("person_details_private")
-            .select("*")
-            .eq("person_id", id)
-            .single();
-          setPrivateData(privData || {});
+          try {
+            const privData = await pb
+              .collection("person_details_private")
+              .getFirstListItem(pb.filter("person_id = {:id}", { id }));
+            setPrivateData(privData || {});
+          } catch {
+            setPrivateData({});
+          }
         }
       } catch (err) {
         console.error("Error fetching member details:", err);
@@ -87,7 +82,7 @@ export default function MemberDetailModal() {
         setLoading(false);
       }
     },
-    [isAdmin, authChecked, supabase],
+    [isAdmin, authChecked, pb],
   );
 
   // Sync state with URL parameter

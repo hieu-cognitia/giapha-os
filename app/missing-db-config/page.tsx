@@ -32,7 +32,7 @@ export default function MissingDBConfigPage() {
               </h2>
               <p className="text-stone-500 font-medium">
                 Ứng dụng hiện chưa được cấu hình biến môi trường kết nối đến
-                Supabase.
+                PocketBase.
               </p>
             </div>
           </div>
@@ -46,20 +46,20 @@ export default function MissingDBConfigPage() {
 
               <ol className="list-decimal list-inside space-y-4 text-stone-600">
                 <li className="leading-relaxed">
-                  Đăng nhập vào{" "}
+                  Tải PocketBase từ{" "}
                   <a
-                    href="https://supabase.com/dashboard/project/_/settings/api"
+                    href="https://pocketbase.io/docs/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-amber-600 font-semibold hover:underline"
                   >
-                    Supabase Dashboard
-                  </a>
-                  .
+                    pocketbase.io
+                  </a>{" "}
+                  và khởi động: <code>./pocketbase serve</code>
                 </li>
                 <li className="leading-relaxed">
-                  Lấy thông tin <b>Project URL</b> và{" "}
-                  <b>Project API Keys (anon public)</b>.
+                  PocketBase mặc định chạy tại{" "}
+                  <code>http://127.0.0.1:8090</code>.
                 </li>
                 <li className="leading-relaxed">
                   Tạo file <code>.env.local</code> ở thư mục gốc của dự án.
@@ -70,8 +70,9 @@ export default function MissingDBConfigPage() {
                     <Terminal className="size-5 text-stone-400 shrink-0 mt-0.5" />
                     <pre>
                       <code>
-                        {`NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your_supabase_anon_key`}
+                        {`NEXT_PUBLIC_POCKETBASE_URL=http://127.0.0.1:8090
+POCKETBASE_SUPERADMIN_EMAIL=your_admin_email
+POCKETBASE_SUPERADMIN_PASSWORD=your_admin_password`}
                       </code>
                     </pre>
                   </div>
