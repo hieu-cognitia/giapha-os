@@ -1,7 +1,8 @@
 import PocketBase from "pocketbase";
 import { cookies } from "next/headers";
 
-const pocketbaseUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL;
+const pocketbaseUrl =
+  process.env.POCKETBASE_URL || process.env.NEXT_PUBLIC_POCKETBASE_URL;
 
 /**
  * Creates a server-side PocketBase client hydrated with the current user's

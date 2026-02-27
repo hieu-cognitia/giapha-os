@@ -1,7 +1,8 @@
 import PocketBase from "pocketbase";
 import { type NextRequest, NextResponse } from "next/server";
 
-const pocketbaseUrl = process.env.NEXT_PUBLIC_POCKETBASE_URL;
+const pocketbaseUrl =
+  process.env.POCKETBASE_URL || process.env.NEXT_PUBLIC_POCKETBASE_URL;
 
 export async function updateSession(request: NextRequest) {
   // If the PocketBase URL is not configured, redirect to the missing-config page.
