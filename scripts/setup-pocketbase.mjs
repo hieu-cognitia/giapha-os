@@ -300,29 +300,45 @@ async function seedData(pb) {
   await Promise.all(persons.map((r) => pb.collection("persons").delete(r.id)));
   ok(`cleared ${rels.length} relationships, ${privs.length} private records, ${persons.length} persons`);
 
-  // Insert persons
+  // Insert persons and build ID mapping (custom IDs → PocketBase IDs)
   console.log("\n👥  Inserting 27 persons...");
+  const idMap = {}; // Maps custom IDs (g1n01, etc) to actual PocketBase IDs
   for (const p of PERSONS) {
+    const customId = p.id; // Keep track of the custom ID
     const data = { ...p };
+    delete data.id; // Remove custom ID, let PocketBase generate one
     // Remove null fields so PocketBase doesn't complain about wrong types
     for (const k of Object.keys(data)) {
       if (data[k] === null) delete data[k];
     }
-    await pb.collection("persons").create(data, { requestKey: null });
+    const created = await pb.collection("persons").create(data, { requestKey: null });
+    idMap[customId] = created.id; // Store the mapping
   }
   ok(`${PERSONS.length} persons inserted`);
 
-  // Insert relationships
+  // Insert relationships using the ID mapping
   console.log("\n🔗  Inserting relationships...");
   for (const r of RELATIONSHIPS) {
-    await pb.collection("relationships").create(r, { requestKey: null });
+    const relData = {
+      type: r.type,
+      person_a: idMap[r.person_a],
+      person_b: idMap[r.person_b],
+    };
+    if (r.note) relData.note = r.note;
+    await pb.collection("relationships").create(relData, { requestKey: null });
   }
   ok(`${RELATIONSHIPS.length} relationships inserted`);
 
-  // Insert private details
+  // Insert private details using the ID mapping
   console.log("\n🔒  Inserting private details...");
   for (const d of PRIVATE_DETAILS) {
-    await pb.collection("person_details_private").create(d, { requestKey: null });
+    const privData = {
+      person_id: idMap[d.person_id],
+      phone_number: d.phone_number,
+      occupation: d.occupation,
+      current_residence: d.current_residence,
+    };
+    await pb.collection("person_details_private").create(privData, { requestKey: null });
   }
   ok(`${PRIVATE_DETAILS.length} private detail records inserted`);
 }
