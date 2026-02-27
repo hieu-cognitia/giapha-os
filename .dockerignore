@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env.local
+.env*.local
+node_modules
+.next
+pb_data
+pb_migrations
+*.md
+docs/
+scripts/

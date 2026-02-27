@@ -1,0 +1,41 @@
+services:
+  pocketbase:
+    image: alpine:latest
+    working_dir: /pb
+    volumes:
+      - pb_data:/pb/pb_data
+    ports:
+      - "${PB_PORT:-8090}:8090"
+    command: >-
+      sh -c "
+        apk add --no-cache unzip ca-certificates &&
+        wget -qO /tmp/pb.zip https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION:-0.36.5}/pocketbase_${PB_VERSION:-0.36.5}_linux_amd64.zip &&
+        unzip -o /tmp/pb.zip -d /pb &&
+        /pb/pocketbase serve --http=0.0.0.0:8090 --dir=/pb/pb_data
+      "
+    restart: unless-stopped
+
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Baked into the Next.js bundle at build time.
+        # Change this to your server's public address for production:
+        #   NEXT_PUBLIC_POCKETBASE_URL=http://my-server:8090
+        NEXT_PUBLIC_POCKETBASE_URL: ${NEXT_PUBLIC_POCKETBASE_URL:-http://localhost:8090}
+    ports:
+      - "${NEXTJS_PORT:-3000}:3000"
+    environment:
+      SITE_NAME: ${SITE_NAME:-Gia Phả OS}
+      POCKETBASE_SUPERADMIN_EMAIL: ${POCKETBASE_SUPERADMIN_EMAIL:-}
+      POCKETBASE_SUPERADMIN_PASSWORD: ${POCKETBASE_SUPERADMIN_PASSWORD:-}
+      # Server-side URL uses the Docker service name so Next.js can reach
+      # PocketBase from within the container network at runtime.
+      POCKETBASE_URL: ${POCKETBASE_URL:-http://pocketbase:8090}
+    depends_on:
+      - pocketbase
+    restart: unless-stopped
+
+volumes:
+  pb_data:

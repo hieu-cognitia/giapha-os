@@ -6,17 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "pb:setup": "node scripts/setup-pocketbase.mjs",
+    "pb:seed": "node scripts/setup-pocketbase.mjs --seed-only"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.98.0",
     "framer-motion": "^12.34.3",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.0",
     "lucide-react": "^0.575.0",
     "lunar-javascript": "^1.7.7",
     "next": "16.1.6",
+    "pocketbase": "^0.26.8",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

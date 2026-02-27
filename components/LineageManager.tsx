@@ -1,7 +1,7 @@
 "use client";
 
 import { Person, Relationship } from "@/types";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/pocketbase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
@@ -162,7 +162,7 @@ export default function LineageManager({
   persons,
   relationships,
 }: LineageManagerProps) {
-  const supabase = createClient();
+  const pb = createClient();
 
   const [updates, setUpdates] = useState<ComputedUpdate[] | null>(null);
   const [computing, setComputing] = useState(false);
@@ -224,16 +224,12 @@ export default function LineageManager({
       const CHUNK = 20;
       for (let i = 0; i < changedOnly.length; i += CHUNK) {
         const chunk = changedOnly.slice(i, i + CHUNK);
-        // Update each person individually (Supabase doesn't support bulk upsert with different values easily)
         await Promise.all(
           chunk.map((u) =>
-            supabase
-              .from("persons")
-              .update({
-                generation: u.new_generation,
-                birth_order: u.new_birth_order,
-              })
-              .eq("id", u.id),
+            pb.collection("persons").update(u.id, {
+              generation: u.new_generation,
+              birth_order: u.new_birth_order,
+            }),
           ),
         );
       }

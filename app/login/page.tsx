@@ -2,7 +2,7 @@
 
 import config from "@/app/config";
 import Footer from "@/components/Footer";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/pocketbase/client";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -35,7 +35,7 @@ export default function LoginPage() {
   }, []);
 
   const router = useRouter();
-  const supabase = useMemo(() => createClient(), []);
+  const pb = useMemo(() => createClient(), []);
 
   const [isLogin, setIsLogin] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -49,16 +49,13 @@ export default function LoginPage() {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) {
-          setError(error.message);
-        } else {
+        try {
+          await pb.collection("users").authWithPassword(email, password);
           router.push("/dashboard");
           router.refresh();
+        } catch (err: unknown) {
+          const e = err as { message?: string };
+          setError(e?.message || "Đăng nhập thất bại. Vui lòng thử lại.");
         }
       } else {
         if (password !== confirmPassword) {
@@ -67,56 +64,50 @@ export default function LoginPage() {
           return;
         }
 
-        // 1. Try to sign up
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-
-        if (error) {
-          // Check if error is related to missing database schema/tables
-          if (
-            error.message.includes("relation") &&
-            error.message.includes("does not exist")
-          ) {
-            router.push("/setup");
-            return;
+        try {
+          // Check whether this will be the first user so we can give them admin rights.
+          let isFirstUser = false;
+          try {
+            const existing = await pb.collection("users").getList(1, 1);
+            isFirstUser = existing.totalItems === 0;
+          } catch {
+            // If we can't list users (e.g. no list rule), assume not first
           }
 
-          setError(error.message);
-        } else if (data.user?.identities && data.user.identities.length === 0) {
-          setError(
-            "Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.",
-          );
-        } else {
-          if (data.session) {
+          // Create the new account
+          await pb.collection("users").create({
+            email,
+            password,
+            passwordConfirm: password,
+            role: isFirstUser ? "admin" : "member",
+            is_active: isFirstUser,
+          });
+
+          if (isFirstUser) {
+            // First user: sign in immediately
+            await pb.collection("users").authWithPassword(email, password);
             router.push("/dashboard");
             router.refresh();
           } else {
-            // Attempt to sign in immediately (catches auto-confirmed first admin)
-            const { data: signInData, error: signInError } =
-              await supabase.auth.signInWithPassword({
-                email,
-                password,
-              });
-
-            if (!signInError && signInData.session) {
-              router.push("/dashboard");
-              router.refresh();
-            } else {
-              setSuccessMessage(
-                "Đăng ký thành công! Vui lòng chờ admin kích hoạt tài khoản để xem nội dung.",
-              );
-              setIsLogin(true); // Switch back to login view
-              setConfirmPassword(""); // clear confirm password
-              setPassword(""); // clear password
-            }
+            setSuccessMessage(
+              "Đăng ký thành công! Vui lòng chờ admin kích hoạt tài khoản để xem nội dung.",
+            );
+            setIsLogin(true);
+            setConfirmPassword("");
+            setPassword("");
           }
+        } catch (err: unknown) {
+          const e = err as { message?: string; data?: Record<string, { message?: string }> };
+          // Surface per-field validation errors from PocketBase
+          const fieldErrors = e?.data
+            ? Object.values(e.data)
+                .map((v) => v?.message)
+                .filter(Boolean)
+                .join(" ")
+            : null;
+          setError(fieldErrors || e?.message || "Đăng ký thất bại. Vui lòng thử lại.");
         }
       }
-    } catch (err: any) {
-      setError("An unexpected error occurred");
-      console.error(err);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 import MemberForm from "@/components/MemberForm";
-import { createClient } from "@/utils/supabase/server";
+import { Person } from "@/types";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -10,25 +11,15 @@ interface PageProps {
 
 export default async function EditMemberPage({ params }: PageProps) {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
   const { id } = await params;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
   // Check if user is admin - strict check for editing
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
+  if (pb.authStore.model?.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <div className="text-center">
@@ -44,24 +35,27 @@ export default async function EditMemberPage({ params }: PageProps) {
   }
 
   // Fetch Public Data
-  const { data: person, error } = await supabase
-    .from("persons")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error || !person) {
+  let person: Person | null = null;
+  try {
+    const raw = await pb.collection("persons").getOne(id);
+    person = raw as unknown as Person;
+  } catch {
     notFound();
   }
 
-  // Fetch Private Data
-  const { data: privateData } = await supabase
-    .from("person_details_private")
-    .select("*")
-    .eq("person_id", id)
-    .single();
+  if (!person) notFound();
 
-  const initialData = { ...person, ...privateData };
+  // Fetch Private Data
+  let privateData = null;
+  try {
+    privateData = await pb
+      .collection("person_details_private")
+      .getFirstListItem(pb.filter("person_id = {:id}", { id }));
+  } catch {
+    // No private data yet — that's fine
+  }
+
+  const initialData = { ...person, ...privateData } as Person;
 
   return (
     <div className="flex-1 w-full relative flex flex-col pb-8">

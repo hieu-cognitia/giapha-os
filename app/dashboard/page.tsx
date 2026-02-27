@@ -2,7 +2,8 @@ import { DashboardProvider } from "@/components/DashboardContext";
 import DashboardViews from "@/components/DashboardViews";
 import MemberDetailModal from "@/components/MemberDetailModal";
 import ViewToggle from "@/components/ViewToggle";
-import { createClient } from "@/utils/supabase/server";
+import { Person, Relationship } from "@/types";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -18,25 +19,20 @@ export default async function FamilyTreePage({ searchParams }: PageProps) {
   // Actually, to make transitions fast and avoid duplicate fetching across components,
   // we will fetch data here and pass it down as props.
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
-  const { data: personsData } = await supabase
-    .from("persons")
-    .select("*")
-    .order("birth_year", { ascending: true, nullsFirst: false });
+  const personsData = await pb.collection("persons").getFullList({
+    sort: "birth_year",
+  });
 
-  const { data: relsData } = await supabase.from("relationships").select("*");
+  const relsData = await pb.collection("relationships").getFullList();
 
-  const persons = personsData || [];
-  const relationships = relsData || [];
+  const persons = personsData as unknown as Person[];
+  const relationships = relsData as unknown as Relationship[];
 
   // Prepare map and roots for tree views
   const personsMap = new Map();

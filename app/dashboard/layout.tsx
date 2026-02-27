@@ -2,7 +2,7 @@ import config from "@/app/config";
 import DashboardHeader from "@/components/DashboardHeader";
 import Footer from "@/components/Footer";
 import LogoutButton from "@/components/LogoutButton";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -14,25 +14,18 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_active, role")
-    .eq("id", user.id)
-    .single();
+  const user = pb.authStore.model;
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = user?.role === "admin";
+  const isActive = user?.is_active ?? false;
 
-  if (!profile?.is_active) {
+  if (!isActive) {
     return (
       <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col font-sans">
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-stone-200 shadow-sm transition-all duration-200">
@@ -87,7 +80,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col font-sans">
-      <DashboardHeader isAdmin={isAdmin} userEmail={user.email} />
+      <DashboardHeader isAdmin={isAdmin} userEmail={user?.email ?? ""} />
       {children}
       <Footer
         className="mt-auto bg-white border-t border-stone-200"

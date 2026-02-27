@@ -1,7 +1,7 @@
 "use client";
 
 import { Gender, Person } from "@/types";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/pocketbase/client";
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import {
   AlertCircle,
@@ -36,7 +36,7 @@ export default function MemberForm({
   onCancel,
 }: MemberFormProps) {
   const router = useRouter();
-  const supabase = createClient();
+  const pb = createClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,21 +142,10 @@ export default function MemberForm({
 
       // 0. Handle Avatar Upload if a new file is selected
       if (avatarFile) {
-        const fileExt = avatarFile.name.split(".").pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(filePath, avatarFile);
-
-        if (uploadError) throw uploadError;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("avatars").getPublicUrl(filePath);
-
-        finalAvatarUrl = publicUrl;
+        const formData = new FormData();
+        formData.append("file", avatarFile);
+        const avatarRecord = await pb.collection("avatars").create(formData);
+        finalAvatarUrl = pb.files.getURL(avatarRecord, avatarRecord.file as string);
       }
 
       // 1. Upsert public data
@@ -180,35 +169,33 @@ export default function MemberForm({
       let personId = initialData?.id;
 
       if (isEditing && personId) {
-        const { error: updateError } = await supabase
-          .from("persons")
-          .update(personData)
-          .eq("id", personId);
-        if (updateError) throw updateError;
+        await pb.collection("persons").update(personId, personData);
       } else {
-        const { data: newPerson, error: createError } = await supabase
-          .from("persons")
-          .insert(personData)
-          .select()
-          .single();
-        if (createError) throw createError;
+        const newPerson = await pb.collection("persons").create(personData);
         personId = newPerson.id;
       }
 
       // 2. Upsert private data (only if admin and personId exists)
       if (isAdmin && personId) {
-        const privateData = {
+        const privatePayload = {
           person_id: personId,
           phone_number: phoneNumber || null,
           occupation: occupation || null,
           current_residence: currentResidence || null,
         };
 
-        const { error: privateError } = await supabase
-          .from("person_details_private")
-          .upsert(privateData); // Upsert works for both new and existing if we use person_id as unique key
-
-        if (privateError) throw privateError;
+        // Check if a private record already exists, then create or update
+        try {
+          const existing = await pb
+            .collection("person_details_private")
+            .getFirstListItem(pb.filter("person_id = {:id}", { id: personId }));
+          await pb
+            .collection("person_details_private")
+            .update(existing.id, privatePayload);
+        } catch {
+          // Not found — create it
+          await pb.collection("person_details_private").create(privatePayload);
+        }
       }
 
       // After save: use callback if provided, otherwise fall back to page navigation
@@ -391,31 +378,23 @@ export default function MemberForm({
                     <button
                       type="button"
                       onClick={async () => {
-                        // If there is an existing URL from Supabase, try to extract the file path to delete it
+                        // If there is an existing avatar stored in PocketBase (avatars collection),
+                        // try to delete it by extracting the record ID from the URL.
                         if (
                           initialData?.avatar_url &&
                           avatarUrl === initialData.avatar_url
                         ) {
                           try {
-                            // Extract just the filename from the end of the URL
-                            const fileName = initialData.avatar_url
-                              .split("/")
-                              .pop();
-                            if (fileName) {
-                              const { error: removeError } =
-                                await supabase.storage
-                                  .from("avatars")
-                                  .remove([fileName]);
-                              if (removeError) {
-                                console.error(
-                                  "Error removing avatar from storage:",
-                                  removeError,
-                                );
-                              }
+                            // PocketBase file URL format: /api/files/{collectionId}/{recordId}/{filename}
+                            const urlParts = initialData.avatar_url.split("/");
+                            const filesIdx = urlParts.indexOf("files");
+                            if (filesIdx !== -1 && urlParts[filesIdx + 2]) {
+                              const recordId = urlParts[filesIdx + 2];
+                              await pb.collection("avatars").delete(recordId);
                             }
                           } catch (err) {
                             console.error(
-                              "Failed to parse avatar URL for deletion",
+                              "Failed to delete avatar from storage",
                               err,
                             );
                           }

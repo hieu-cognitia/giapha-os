@@ -1,42 +1,41 @@
 import AdminUserList from "@/components/AdminUserList";
 import { AdminUserData } from "@/types";
-import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/pocketbase/admin";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function AdminUsersPage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!pb.authStore.isValid) {
     redirect("/login");
   }
 
-  // Check role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = pb.authStore.model?.role === "admin";
 
   if (!isAdmin) {
     redirect("/dashboard");
   }
 
-  // Fetch users via RPC
-  const { data: users, error } = await supabase.rpc("get_admin_users");
-
-  if (error) {
+  // Fetch users using admin credentials so we can list all accounts
+  let typedUsers: AdminUserData[] = [];
+  try {
+    const adminPb = await createAdminClient();
+    const users = await adminPb.collection("users").getFullList({
+      sort: "-created",
+    });
+    typedUsers = users.map((u) => ({
+      id: u.id,
+      email: u.email as string,
+      role: u.role as AdminUserData["role"],
+      is_active: u.is_active as boolean,
+      created_at: u.created as string,
+    }));
+  } catch (error) {
     console.error("Error fetching users:", error);
   }
-
-  const typedUsers = (users as AdminUserData[]) || [];
 
   return (
     <main className="flex-1 overflow-auto bg-stone-50/50 flex flex-col pt-8 relative w-full">
@@ -55,7 +54,7 @@ export default async function AdminUsersPage() {
             </p>
           </div>
         </div>
-        <AdminUserList initialUsers={typedUsers} currentUserId={user.id} />
+        <AdminUserList initialUsers={typedUsers} currentUserId={pb.authStore.model?.id ?? ""} />
       </div>
     </main>
   );

@@ -1,5 +1,6 @@
 import FamilyStats from "@/components/FamilyStats";
-import { createClient } from "@/utils/supabase/server";
+import { Person, Relationship } from "@/types";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -9,18 +10,14 @@ export const metadata = {
 
 export default async function StatsPage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (!pb.authStore.isValid) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: persons } = await supabase.from("persons").select("*");
-  const { data: relationships } = await supabase
-    .from("relationships")
-    .select("*");
+  const personsRaw = await pb.collection("persons").getFullList();
+  const relationshipsRaw = await pb.collection("relationships").getFullList();
+  const persons = personsRaw as unknown as Person[];
+  const relationships = relationshipsRaw as unknown as Relationship[];
 
   return (
     <div className="flex-1 w-full relative flex flex-col pb-12">
@@ -35,8 +32,8 @@ export default async function StatsPage() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1">
         <FamilyStats
-          persons={persons ?? []}
-          relationships={relationships ?? []}
+          persons={persons}
+          relationships={relationships}
         />
       </main>
     </div>

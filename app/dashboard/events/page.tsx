@@ -1,7 +1,7 @@
 import { DashboardProvider } from "@/components/DashboardContext";
 import EventsList from "@/components/EventsList";
 import MemberDetailModal from "@/components/MemberDetailModal";
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/pocketbase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -11,19 +11,25 @@ export const metadata = {
 
 export default async function EventsPage() {
   const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const pb = createClient(cookieStore);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (!pb.authStore.isValid) redirect("/login");
 
-  if (!user) redirect("/login");
-
-  const { data: persons } = await supabase
-    .from("persons")
-    .select(
-      "id, full_name, birth_year, birth_month, birth_day, death_year, death_month, death_day, is_deceased",
-    );
+  const personsRaw = await pb.collection("persons").getFullList({
+    fields:
+      "id,full_name,birth_year,birth_month,birth_day,death_year,death_month,death_day,is_deceased",
+  });
+  const persons = personsRaw as unknown as {
+    id: string;
+    full_name: string;
+    birth_year: number | null;
+    birth_month: number | null;
+    birth_day: number | null;
+    death_year: number | null;
+    death_month: number | null;
+    death_day: number | null;
+    is_deceased: boolean;
+  }[];
 
   return (
     <DashboardProvider>
@@ -38,7 +44,7 @@ export default async function EventsPage() {
         </div>
 
         <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1">
-          <EventsList persons={persons ?? []} />
+          <EventsList persons={persons} />
         </main>
       </div>
 
