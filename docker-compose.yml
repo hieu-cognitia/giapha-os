@@ -25,7 +25,7 @@ services:
         #   NEXT_PUBLIC_POCKETBASE_URL=http://my-server:8090
         NEXT_PUBLIC_POCKETBASE_URL: ${NEXT_PUBLIC_POCKETBASE_URL:-http://localhost:8090}
     ports:
-      - "${NEXTJS_PORT:-3000}:3000"
+      - "${NEXTJS_PORT:-3030}:3030"
     environment:
       SITE_NAME: ${SITE_NAME:-Gia Phả OS}
       POCKETBASE_SUPERADMIN_EMAIL: ${POCKETBASE_SUPERADMIN_EMAIL:-}
